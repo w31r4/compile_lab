@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>自动机可视化</title>
+  <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+    header { padding: 20px; background: linear-gradient(120deg, #0ea5e9, #6366f1); color: #0b1220; }
+    h1 { margin: 0 0 6px 0; font-weight: 700; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+    .panel { background: rgba(15,23,42,0.8); border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .panel h2 { margin-top: 0; color: #38bdf8; font-size: 18px; }
+    .chips span { display: inline-block; margin: 4px 6px 4px 0; padding: 4px 10px; border-radius: 16px; background: rgba(148,163,184,0.15); border: 1px solid rgba(148,163,184,0.3); font-size: 12px; }
+    #graph-container { background: #0b1220; min-height: 320px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px dashed rgba(148,163,184,0.3); padding: 12px; }
+    select, button, input, textarea { background: #0b1220; color: #e2e8f0; border: 1px solid rgba(148,163,184,0.4); border-radius: 8px; padding: 8px 10px; }
+    button { cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    button:hover { background: #1e293b; }
+    button:active { transform: translateY(1px); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 8px; border-bottom: 1px solid rgba(148,163,184,0.2); text-align: left; }
+    th { color: #94a3b8; font-weight: 600; }
+    .badge-true { color: #22c55e; }
+    .badge-false { color: #f87171; }
+    code { background: rgba(148,163,184,0.15); padding: 2px 6px; border-radius: 6px; }
+    .flex { display: flex; gap: 8px; flex-wrap: wrap; }
+    .muted { color: #94a3b8; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>自动机可视化</h1>
+      <div class="flex" style="align-items:center; gap:12px;">
+        <div class="muted">正则：<code id="regex"></code></div>
+        <input id="regex-input" placeholder="输入新的正则表达式（默认：(a|b)*abb）" style="flex:1; min-width:200px;">
+        <button id="regex-apply">应用正则</button>
+      </div>
+  </header>
+  <div class="container">
+    <div class="panel" style="grid-column: span 2;">
+      <h2>图形展示</h2>
+      <div class="flex">
+        <label>查看：
+          <select id="graph-select">
+            <option value="nfa">NFA</option>
+            <option value="dfa">DFA</option>
+            <option value="mdfa">最小 DFA</option>
+          </select>
+        </label>
+        <button id="rerender-btn">重新渲染</button>
+        <button id="download-btn">下载当前图为 PNG</button>
+        <span class="muted">在浏览器渲染 DOT，无需额外工具</span>
+      </div>
+      <div id="graph-container"></div>
+    </div>
+    <div class="panel" style="grid-column: span 2;">
+      <h2>批量检测（多行输入，点击检测后表格会刷新）</h2>
+      <div class="flex" style="align-items:center;">
+        <textarea id="batch-input" rows="4" style="flex:1;" placeholder="每行一个输入串"></textarea>
+        <button id="batch-btn">批量检测</button>
+      </div>
+      <table style="margin-top:8px;">
+        <thead><tr><th>输入串</th><th>NFA</th><th>DFA</th><th>最小 DFA</th><th>路径(NFA)</th><th>路径(最小 DFA)</th></tr></thead>
+        <tbody id="batch-body"></tbody>
+      </table>
+      <div class="muted">用于批量字符串统一检测；没有预设结果，完全按当前正则和输入刷新。</div>
+    </div>
+    <div class="panel">
+      <h2>单个串检测</h2>
+      <div class="flex" style="align-items:center;">
+        <input id="manual-input" placeholder="输入要检测的字符串" style="flex:1; min-width:180px;">
+        <button id="manual-btn">检测</button>
+      </div>
+      <div id="manual-result" style="margin-top:8px;"></div>
+      <div class="muted" id="manual-path"></div>
+    </div>
+    <div class="panel">
+      <h2>当前自动机信息</h2>
+      <div class="chips">
+        <span id="chip-abc"></span>
+        <span id="chip-dfa"></span>
+        <span id="chip-mdfa"></span>
+      </div>
+      <div class="muted">修改正则后自动重建 NFA/DFA/最小 DFA 并刷新图与检测逻辑。</div>
+    </div>
+  </div>
+
+  <script>
+    const APP_DATA = {"regex": "(a|b)*abb", "defaultRegex": "(a|b)*abb", "defaultTests": []};
+    const DEFAULT_REGEX = APP_DATA.defaultRegex || "(a|b)*abb";
+    const EPS = null;
+    const EPS_KEY = String(EPS);
+
+    // ==== 正则 -> 后缀 ====
+    function insertConcat(regex) {
+      const out = [];
+      for (let i = 0; i < regex.length; i++) {
+        const c = regex[i];
+        if (c === " ") continue;
+        out.push(c);
+        const next = regex[i + 1];
+        if (!next || next === " " || c === "|" || c === "(") continue;
+        if (c !== "|" && c !== "(") {
+          if (next !== "|" && next !== ")" && next !== "*") out.push(".");
+        }
+      }
+      return out.join("");
+    }
+
+    function regexToPostfix(regex) {
+      const prec = { "*": 3, ".": 2, "|": 1 };
+      const out = [];
+      const stack = [];
+      const src = insertConcat(regex);
+      for (const c of src) {
+        if (c === "(") stack.push(c);
+        else if (c === ")") {
+          while (stack.length && stack[stack.length - 1] !== "(") out.push(stack.pop());
+          if (stack.length && stack[stack.length - 1] === "(") stack.pop();
+        } else if (prec[c]) {
+          while (stack.length && stack[stack.length - 1] !== "(" && prec[stack[stack.length - 1]] >= prec[c]) {
+            out.push(stack.pop());
+          }
+          stack.push(c);
+        } else {
+          out.push(c);
+        }
+      }
+      while (stack.length) out.push(stack.pop());
+      return out.join("");
+    }
+
+    // ==== NFA 构造 ====
+    function addEdge(trans, src, sym, dst) {
+      if (!trans[src]) trans[src] = {};
+      if (!trans[src][sym]) trans[src][sym] = new Set();
+      trans[src][sym].add(dst);
+    }
+
+    function postfixToNfa(postfix) {
+      let sid = 0;
+      const newState = () => sid++;
+      const stack = [];
+      for (const c of postfix) {
+        if (c === "*") {
+          const nfa1 = stack.pop();
+          const start = newState();
+          const accept = newState();
+          const trans = JSON.parse(JSON.stringify(nfa1.transitions, (_, v) => v instanceof Set ? Array.from(v) : v));
+          // restore sets
+          for (const k of Object.keys(trans)) {
+            for (const s of Object.keys(trans[k])) trans[k][s] = new Set(trans[k][s]);
+          }
+          addEdge(trans, start, EPS, nfa1.start);
+          addEdge(trans, start, EPS, accept);
+          addEdge(trans, nfa1.accept, EPS, nfa1.start);
+          addEdge(trans, nfa1.accept, EPS, accept);
+          stack.push({ start, accept, transitions: trans });
+        } else if (c === ".") {
+          const nfa2 = stack.pop();
+          const nfa1 = stack.pop();
+          const trans = JSON.parse(JSON.stringify({...nfa1.transitions, ...nfa2.transitions}, (_, v) => v instanceof Set ? Array.from(v) : v));
+          for (const k of Object.keys(trans)) {
+            for (const s of Object.keys(trans[k])) trans[k][s] = new Set(trans[k][s]);
+          }
+          addEdge(trans, nfa1.accept, EPS, nfa2.start);
+          stack.push({ start: nfa1.start, accept: nfa2.accept, transitions: trans });
+        } else if (c === "|") {
+          const nfa2 = stack.pop();
+          const nfa1 = stack.pop();
+          const start = newState();
+          const accept = newState();
+          const trans = JSON.parse(JSON.stringify({...nfa1.transitions, ...nfa2.transitions}, (_, v) => v instanceof Set ? Array.from(v) : v));
+          for (const k of Object.keys(trans)) {
+            for (const s of Object.keys(trans[k])) trans[k][s] = new Set(trans[k][s]);
+          }
+          addEdge(trans, start, EPS, nfa1.start);
+          addEdge(trans, start, EPS, nfa2.start);
+          addEdge(trans, nfa1.accept, EPS, accept);
+          addEdge(trans, nfa2.accept, EPS, accept);
+          stack.push({ start, accept, transitions: trans });
+        } else {
+          const start = newState();
+          const accept = newState();
+          const trans = {};
+          addEdge(trans, start, c, accept);
+          stack.push({ start, accept, transitions: trans });
+        }
+      }
+      return stack.pop();
+    }
+
+    const regexToNfa = (re) => postfixToNfa(regexToPostfix(re));
+
+    // ==== NFA -> DFA ====
+    const setKey = (set) => Array.from(set).sort((a, b) => a - b).join(",");
+    const union = (a, b) => new Set([...a, ...b]);
+
+    function epsilonClosure(trans, states) {
+      const stack = [...states];
+      const closure = new Set(states);
+      while (stack.length) {
+        const s = stack.pop();
+        const eps = trans[s]?.[EPS] || new Set();
+        for (const t of eps) if (!closure.has(t)) { closure.add(t); stack.push(t); }
+      }
+      return closure;
+    }
+
+    function move(trans, states, sym) {
+      const res = new Set();
+      for (const s of states) {
+        const dsts = trans[s]?.[sym] || new Set();
+        dsts.forEach((d) => res.add(d));
+      }
+      return res;
+    }
+
+    function nfaToDfa(nfa) {
+      const alphabet = new Set();
+      for (const mapping of Object.values(nfa.transitions)) {
+        for (const sym of Object.keys(mapping)) if (sym !== EPS_KEY) alphabet.add(sym);
+      }
+      const startSet = epsilonClosure(nfa.transitions, new Set([nfa.start]));
+      const dfaStates = new Map();
+      const queue = [];
+      const trans = {};
+      dfaStates.set(setKey(startSet), 0);
+      queue.push(startSet);
+      const accepts = new Set();
+      if (startSet.has(nfa.accept)) accepts.add(0);
+      while (queue.length) {
+        const S = queue.shift();
+        const sid = dfaStates.get(setKey(S));
+        trans[sid] = trans[sid] || {};
+        for (const sym of alphabet) {
+          const U = epsilonClosure(nfa.transitions, move(nfa.transitions, S, sym));
+          if (U.size === 0) continue;
+          const key = setKey(U);
+          if (!dfaStates.has(key)) {
+            dfaStates.set(key, dfaStates.size);
+            queue.push(U);
+            if (U.has(nfa.accept)) accepts.add(dfaStates.size - 1);
+          }
+          trans[sid][sym] = dfaStates.get(key);
+        }
+      }
+      return { start: 0, accepts, transitions: trans, alphabet };
+    }
+
+    // ==== DFA 最小化 ====
+    function reachableStates(dfa) {
+      const vis = new Set();
+      const stack = [dfa.start];
+      while (stack.length) {
+        const s = stack.pop();
+        if (vis.has(s)) continue;
+        vis.add(s);
+        const m = dfa.transitions[s] || {};
+        for (const nxt of Object.values(m)) stack.push(nxt);
+      }
+      return vis;
+    }
+
+    function makeTotalDfa(dfa) {
+      const states = reachableStates(dfa);
+      const alpha = Array.from(dfa.alphabet);
+      let sink = null;
+      for (const s of states) {
+        dfa.transitions[s] = dfa.transitions[s] || {};
+        for (const a of alpha) {
+          if (dfa.transitions[s][a] === undefined) {
+            if (sink === null) {
+              sink = Math.max(...states) + 1;
+              dfa.transitions[sink] = {};
+              for (const a2 of alpha) dfa.transitions[sink][a2] = sink;
+            }
+            dfa.transitions[s][a] = sink;
+          }
+        }
+      }
+      if (sink !== null) states.add(sink);
+      return new Set(states);
+    }
+
+    function minimizeDfa(dfa) {
+      const states = Array.from(makeTotalDfa(dfa)).sort((a, b) => a - b);
+      const idx = new Map(states.map((s, i) => [s, i]));
+      const n = states.length;
+      const table = Array.from({ length: n }, () => Array(n).fill(false));
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+          if (dfa.accepts.has(states[i]) !== dfa.accepts.has(states[j])) table[i][j] = true;
+        }
+      }
+      let changed = true;
+      const alpha = Array.from(dfa.alphabet);
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < i; j++) {
+            if (table[i][j]) continue;
+            for (const a of alpha) {
+              const p = dfa.transitions[states[i]][a];
+              const q = dfa.transitions[states[j]][a];
+              if (p === q) continue;
+              const ii = idx.get(Math.max(p, q));
+              const jj = idx.get(Math.min(p, q));
+              if (table[ii][jj]) { table[i][j] = true; changed = true; break; }
+            }
+          }
+        }
+      }
+      const parent = new Map(states.map((s) => [s, s]));
+      const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+      const unite = (x, y) => { const rx = find(x), ry = find(y); if (rx !== ry) parent.set(ry, rx); };
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < i; j++) if (!table[i][j]) unite(states[i], states[j]);
+      }
+      const reps = new Map();
+      let newId = 0;
+      for (const s of states) {
+        const r = find(s);
+        if (!reps.has(r)) reps.set(r, newId++);
+      }
+      const mapState = (s) => reps.get(find(s));
+      const newTrans = {};
+      for (const s of states) {
+        const ns = mapState(s);
+        newTrans[ns] = newTrans[ns] || {};
+        for (const [a, t] of Object.entries(dfa.transitions[s] || {})) newTrans[ns][a] = mapState(t);
+      }
+      const newAccepts = new Set(Array.from(dfa.accepts).map(mapState));
+      const newStart = mapState(dfa.start);
+      return { start: newStart, accepts: newAccepts, transitions: newTrans, alphabet: new Set(dfa.alphabet) };
+    }
+
+    // ==== 识别与 DOT ====
+    function traceNfa(nfa, str) {
+      const alphabet = collectAlphabet(nfa);
+      for (const ch of str) {
+        if (!alphabet.has(ch)) return { path: [nfa.start], ok: false, reason: `字符 '${ch}' 不在字母表中` };
+      }
+      const key = (s, i) => `${s}@${i}`;
+      const prev = new Map();
+      const visited = new Set();
+      const queue = [];
+      const push = (state, pos, fromKey, via) => {
+        const k = key(state, pos);
+        if (visited.has(k)) return;
+        visited.add(k);
+        if (fromKey) prev.set(k, { from: fromKey, via });
+        queue.push({ state, pos });
+      };
+      push(nfa.start, 0, null, null);
+      let lastKey = key(nfa.start, 0);
+
+      const buildPath = (endKey) => {
+        if (!endKey) return [nfa.start];
+        const seq = [];
+        let cur = endKey;
+        while (cur) {
+          const [stateStr] = cur.split("@");
+          seq.push(Number(stateStr));
+          const info = prev.get(cur);
+          cur = info?.from || null;
+        }
+        return seq.reverse();
+      };
+
+      while (queue.length) {
+        const { state, pos } = queue.shift();
+        const currKey = key(state, pos);
+        lastKey = currKey;
+        if (state === nfa.accept && pos === str.length) {
+          return { ok: true, path: buildPath(currKey), reason: "找到接受路径" };
+        }
+        const eps = nfa.transitions[state]?.[EPS] || new Set();
+        for (const nxt of eps) push(nxt, pos, currKey, "ε");
+        if (pos < str.length) {
+          const ch = str[pos];
+          const dsts = nfa.transitions[state]?.[ch] || new Set();
+          for (const nxt of dsts) push(nxt, pos + 1, currKey, ch);
+        }
+      }
+      return { ok: false, path: buildPath(lastKey), reason: "未找到接受路径" };
+    }
+
+    function nfaMatch(nfa, str) {
+      return traceNfa(nfa, str).ok;
+    }
+
+    function dfaMatch(dfa, str) {
+      let state = dfa.start;
+      for (const ch of str) {
+        if (!dfa.alphabet.has(ch)) return false;
+        state = dfa.transitions[state]?.[ch];
+        if (state === undefined) return false;
+      }
+      return dfa.accepts.has(state);
+    }
+
+    function traceDfa(dfa, str) {
+      let state = dfa.start;
+      const path = [state];
+      for (const ch of str) {
+        if (!dfa.alphabet.has(ch)) return { path, ok: false, reason: `字符 '${ch}' 不在字母表中` };
+        const nxt = dfa.transitions[state]?.[ch];
+        if (nxt === undefined) return { path, ok: false, reason: `状态 ${state} 遇到 '${ch}' 无转移` };
+        path.push((state = nxt));
+      }
+      return { path, ok: dfa.accepts.has(state), reason: "完成匹配" };
+    }
+
+    function automatonToDot(trans, start, accepts, isNfa, name) {
+      const lines = [`digraph ${name} {`, "  rankdir=LR;", '  node [shape=circle];', '  __start [shape=point];', `  __start -> ${start};`];
+      accepts.forEach((a) => lines.push(`  ${a} [shape=doublecircle];`));
+      for (const [src, mapping] of Object.entries(trans)) {
+        for (const [sym, dsts] of Object.entries(mapping)) {
+          const label = sym === EPS_KEY ? "ε" : sym;
+          if (isNfa) {
+            (Array.from(dsts)).forEach((d) => lines.push(`  ${src} -> ${d} [label="${label}"];`));
+          } else {
+            lines.push(`  ${src} -> ${dsts} [label="${label}"];`);
+          }
+        }
+      }
+      lines.push("}");
+      return lines.join("\n");
+    }
+
+    function collectAlphabet(nfa) {
+      const alpha = new Set();
+      for (const mapping of Object.values(nfa.transitions)) {
+        for (const sym of Object.keys(mapping)) if (sym !== EPS_KEY) alpha.add(sym);
+      }
+      return alpha;
+    }
+
+    function cloneDfa(dfa) {
+      const copy = {
+        start: dfa.start,
+        accepts: new Set(dfa.accepts),
+        alphabet: new Set(dfa.alphabet),
+        transitions: {},
+      };
+      for (const [s, mapping] of Object.entries(dfa.transitions)) {
+        copy.transitions[s] = {};
+        for (const [a, t] of Object.entries(mapping)) copy.transitions[s][a] = t;
+      }
+      return copy;
+    }
+
+    function buildAll(regex) {
+      const nfa = regexToNfa(regex || "");
+      const dfa = nfaToDfa(nfa);
+      const mdfa = minimizeDfa(cloneDfa(dfa));
+      const dots = {
+        nfa: automatonToDot(
+          Object.fromEntries(Object.entries(nfa.transitions).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).map(([a, s]) => [a, Array.from(s)]))])),
+          nfa.start,
+          new Set([nfa.accept]),
+          true,
+          "NFA"
+        ),
+        dfa: automatonToDot(
+          dfa.transitions,
+          dfa.start,
+          dfa.accepts,
+          false,
+          "DFA"
+        ),
+        mdfa: automatonToDot(
+          mdfa.transitions,
+          mdfa.start,
+          mdfa.accepts,
+          false,
+          "MinDFA"
+        ),
+      };
+      return {
+        regex,
+        nfa,
+        dfa,
+        mdfa,
+        dots,
+        meta: {
+          alphabet: Array.from(collectAlphabet(nfa)).sort(),
+          dfa_states: Object.keys(dfa.transitions).length,
+          mdfa_states: Object.keys(mdfa.transitions).length,
+        },
+      };
+    }
+
+    function updateChips(meta) {
+      document.getElementById("chip-abc").textContent = "字母表: " + meta.alphabet.join(", ");
+      document.getElementById("chip-dfa").textContent = "DFA 状态数: " + meta.dfa_states;
+      document.getElementById("chip-mdfa").textContent = "最小 DFA 状态数: " + meta.mdfa_states;
+    }
+
+    function updateRegexLabel(regex) {
+      document.getElementById("regex").textContent = regex;
+      document.getElementById("regex-input").value = regex;
+    }
+
+    let CURRENT = buildAll(APP_DATA.regex || DEFAULT_REGEX);
+
+    function renderGraph(kind) {
+      const dot = CURRENT.dots[kind];
+      const container = document.getElementById("graph-container");
+      container.innerHTML = "渲染中...";
+      const viz = new Viz();
+      viz.renderSVGElement(dot).then(el => {
+        container.innerHTML = "";
+        container.appendChild(el);
+        container.dataset.currentKind = kind;
+        container.dataset.currentSvg = new XMLSerializer().serializeToString(el);
+      }).catch(err => {
+        container.innerHTML = "渲染失败: " + err;
+      });
+    }
+
+    function bindGraphSwitcher() {
+      const sel = document.getElementById("graph-select");
+      sel.addEventListener("change", () => renderGraph(sel.value));
+      renderGraph(sel.value);
+    }
+
+    function bindGraphActions() {
+      document.getElementById("rerender-btn").addEventListener("click", () => renderGraph(document.getElementById("graph-select").value));
+      document.getElementById("download-btn").addEventListener("click", () => {
+        const container = document.getElementById("graph-container");
+        const svgString = container.dataset.currentSvg;
+        const kind = container.dataset.currentKind || document.getElementById("graph-select").value;
+        if (!svgString) { alert("请先渲染图形"); return; }
+        const img = new Image();
+        const svgBlob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+        const url = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(blob => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `${kind}.png`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+          });
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      });
+    }
+
+    function bindManual() {
+      document.getElementById("manual-btn").addEventListener("click", () => {
+        const text = document.getElementById("manual-input").value || "";
+        const res = {
+          nfa: traceNfa(CURRENT.nfa, text),
+          dfa: traceDfa(CURRENT.dfa, text),
+          mdfa: traceDfa(CURRENT.mdfa, text),
+        };
+        const out = document.getElementById("manual-result");
+        out.innerHTML = `
+          <span class="${res.nfa.ok ? "badge-true" : "badge-false"}">NFA: ${res.nfa.ok}</span>
+          <span class="${res.dfa.ok ? "badge-true" : "badge-false"}">DFA: ${res.dfa.ok}</span>
+          <span class="${res.mdfa.ok ? "badge-true" : "badge-false"}">最小 DFA: ${res.mdfa.ok}</span>
+        `;
+        out.className = "";
+        const nfaPath = res.nfa.path.length ? res.nfa.path.join(" -> ") : "无可行路径";
+        const mdfaPath = res.mdfa.path.length ? res.mdfa.path.join(" -> ") : "无可行路径";
+        const nfaReason = res.nfa.ok ? "" : `（${res.nfa.reason}）`;
+        const mdfaReason = res.mdfa.ok ? "" : `（${res.mdfa.reason}）`;
+        document.getElementById("manual-path").innerHTML = `
+          NFA 路径: ${nfaPath}${nfaReason}<br>
+          最小 DFA 路径: ${mdfaPath}${mdfaReason}
+        `;
+      });
+    }
+
+    function bindBatch() {
+      document.getElementById("batch-btn").addEventListener("click", () => {
+        const lines = document.getElementById("batch-input").value.split("\n").map(s => s.trim()).filter(Boolean);
+        const body = document.getElementById("batch-body");
+        body.innerHTML = "";
+        lines.forEach(line => {
+          const res = {
+            nfa: traceNfa(CURRENT.nfa, line),
+            dfa: traceDfa(CURRENT.dfa, line),
+            mdfa: traceDfa(CURRENT.mdfa, line),
+          };
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><code>${line}</code></td>
+            <td class="${res.nfa.ok ? "badge-true" : "badge-false"}">${res.nfa.ok}</td>
+            <td class="${res.dfa.ok ? "badge-true" : "badge-false"}">${res.dfa.ok}</td>
+            <td class="${res.mdfa.ok ? "badge-true" : "badge-false"}">${res.mdfa.ok}</td>
+            <td class="muted">${res.nfa.path.join(" -> ")}</td>
+            <td class="muted">${res.mdfa.path.join(" -> ")}</td>
+          `;
+          body.appendChild(tr);
+        });
+      });
+    }
+
+    function bindRegexApply() {
+      document.getElementById("regex-apply").addEventListener("click", () => {
+        const val = document.getElementById("regex-input").value.trim() || DEFAULT_REGEX;
+        try {
+          CURRENT = buildAll(val);
+          updateRegexLabel(val);
+          updateChips(CURRENT.meta);
+          document.getElementById("batch-body").innerHTML = "";
+          document.getElementById("manual-result").textContent = "";
+          document.getElementById("manual-path").textContent = "";
+          renderGraph(document.getElementById("graph-select").value);
+        } catch (e) {
+          alert("正则解析失败，请检查输入。");
+          console.error(e);
+        }
+      });
+    }
+
+    function init() {
+      updateRegexLabel(CURRENT.regex);
+      updateChips(CURRENT.meta);
+      bindGraphSwitcher();
+      bindGraphActions();
+      bindManual();
+      bindBatch();
+      bindRegexApply();
+    }
+
+    init();
+  </script>
+</body>
+</html>
