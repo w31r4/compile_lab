@@ -1,0 +1,13 @@
+# 测试 FIRST/FOLLOW 集的文法
+# 包含多字符终结符 INT
+# 非终结符
+D, T, L, L'
+# 终结符
+INT, FLOAT, id, ,, ;
+# 开始符号
+D
+# 产生式
+D -> T L ;
+T -> INT | FLOAT
+L -> id L'
+L' -> , id L' | @

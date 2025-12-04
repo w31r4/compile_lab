@@ -1,4 +1,5 @@
 # LL(1) Grammar Example
+# 测试功能：标准 LL(1) 分析流程 (FIRST/FOLLOW 集计算, 预测分析表构建, LL(1) 判定)
 # Non-terminals
 S, L
 # Terminals

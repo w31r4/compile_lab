@@ -1,4 +1,5 @@
 # 原始表达式文法（带左递归）
+# 测试功能：消除左递归 (Left Recursion Elimination)
 # 非终结符
 E, T, F
 # 终结符

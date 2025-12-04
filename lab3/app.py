@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
 
 from src.parser import parse_grammar_string
+from src.grammar import EPSILON
 from src.left_recursion import LeftRecursionEliminator
 from src.left_factoring import LeftFactoringExtractor
 from src.first_follow import FirstFollowCalculator
@@ -73,7 +75,26 @@ def render_results(grammar_content: str) -> None:
         st.warning("⚠️ 该文法不是 LL(1)")
         if ll1.conflicts:
             st.text("冲突:\n" + "\n".join(f"- {c}" for c in ll1.conflicts))
-    st.code(ll1.format_table(), language="text")
+    # 使用表格组件展示，避免制表符错位
+    terminals = ll1._collect_terminals()
+    rows = []
+    for nt in sorted(grammar_no_lf.non_terminals, key=lambda x: x.value):
+        row = {"非终结符": nt.value}
+        mapping = ll1.table.get(nt, {})
+        for term in terminals:
+            prod = mapping.get(term)
+            if prod:
+                rhs = " ".join(str(sym) for sym in prod.right) if prod.right else str(EPSILON)
+                row[term] = f"{nt} -> {rhs}"
+            else:
+                row[term] = ""
+        rows.append(row)
+
+    if rows:
+        df = pd.DataFrame(rows).set_index("非终结符")
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("未生成预测分析表。")
 
 
 def main() -> None:

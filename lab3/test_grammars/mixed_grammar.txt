@@ -1,4 +1,5 @@
 # Mixed Grammar (Left Recursion and Left Factoring)
+# 测试功能：综合测试 (同时包含左递归和左公因子，测试系统处理复杂文法的能力)
 # Non-terminals
 P, Q, R
 # Terminals

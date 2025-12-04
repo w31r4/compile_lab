@@ -370,6 +370,78 @@ M[F, id] = F -> id
 
 ---
 
+## 6. `first_follow_test_grammar.txt`
+
+**原始文法:**
+```
+# 测试 FIRST/FOLLOW 集的文法
+# 包含多字符终结符 INT
+# 非终结符
+D, T, L, L'
+# 终结符
+INT, FLOAT, id, ,, ;
+# 开始符号
+D
+# 产生式
+D -> T L ;
+T -> INT | FLOAT
+L -> id L'
+L' -> , id L' | @
+```
+
+此文法无左递归、无左公因子。
+
+### 6.1 消除左递归 / 6.2 提取左公因子（结果一致）
+
+```
+上下文无关文法:
+  非终结符: {D, L, L', T}
+  终结符: {,, ;, FLOAT, INT, id}
+  开始符号: D
+
+  产生式:
+    D -> T L ;
+    T -> INT
+    T -> FLOAT
+    L -> id L'
+    L' -> , id L'
+    L' -> @
+```
+
+### 6.3 FIRST 集
+
+```
+FIRST(D) = {INT, FLOAT}
+FIRST(T) = {INT, FLOAT}
+FIRST(L) = {id}
+FIRST(L') = {,, @}
+```
+
+### 6.4 FOLLOW 集
+
+```
+FOLLOW(D) = {$}
+FOLLOW(T) = {id}
+FOLLOW(L) = {;}
+FOLLOW(L') = {;}
+```
+
+### 6.5 LL(1) 分析表与判定
+
+文法为 **LL(1)**。
+
+```
+M[D, INT] = D -> T L ;
+M[D, FLOAT] = D -> T L ;
+M[T, INT] = T -> INT
+M[T, FLOAT] = T -> FLOAT
+M[L, id] = L -> id L'
+M[L', ,] = L' -> , id L'
+M[L', ;] = L' -> @
+```
+
+---
+
 ## 5. `expr_grammar.txt`
 
 **原始文法:**
@@ -453,4 +525,65 @@ M[T', $] = T' -> @
 M[T', )] = T' -> @
 M[F, (] = F -> ( E )
 M[F, id] = F -> id
+```
+
+---
+
+## 6. `first_follow_test_grammar.txt`
+
+**原始文法:**
+```
+# 测试 FIRST/FOLLOW 集的文法
+# 包含多字符终结符 INT
+# 非终结符
+D, T, L, L'
+# 终结符
+INT, FLOAT, id, ,, ;
+# 开始符号
+D
+# 产生式
+D -> T L ;
+T -> INT | FLOAT
+L -> id L'
+L' -> , id L' | @
+```
+
+### 6.1 消除左递归
+
+此文法无左递归，输出应与原始文法相同。
+
+### 6.2 提取左公因子
+
+此文法无左公因子，输出应与原始文法相同。
+
+### 6.3 FIRST 集
+
+```
+FIRST(D) = {INT, FLOAT}
+FIRST(T) = {INT, FLOAT}
+FIRST(L) = {id}
+FIRST(L') = {,, @}
+```
+
+### 6.4 FOLLOW 集
+
+```
+FOLLOW(D) = {$}
+FOLLOW(T) = {id}
+FOLLOW(L) = {;}
+FOLLOW(L') = {;}
+```
+
+### 6.5 LL(1) 分析表与判定
+
+文法为 **LL(1)**。
+
+```
+M[D, INT] = D -> T L ;
+M[D, FLOAT] = D -> T L ;
+M[T, INT] = T -> INT
+M[T, FLOAT] = T -> FLOAT
+M[L, id] = L -> id L'
+M[L', ,] = L' -> , id L'
+M[L', ;] = L' -> @
 ```

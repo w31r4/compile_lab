@@ -333,6 +333,46 @@ EXPECTED = {
         },
         "is_ll1": False,
     },
+    "first_follow_test_grammar.txt": {
+        "after_left_recursion": {
+            ("D", ("T", "L", ";")),
+            ("T", ("INT",)),
+            ("T", ("FLOAT",)),
+            ("L", ("id", "L'")),
+            ("L'", (",", "id", "L'")),
+            ("L'", ("@",)),
+        },
+        "after_left_factoring": {
+            ("D", ("T", "L", ";")),
+            ("T", ("INT",)),
+            ("T", ("FLOAT",)),
+            ("L", ("id", "L'")),
+            ("L'", (",", "id", "L'")),
+            ("L'", ("@",)),
+        },
+        "first_sets": {
+            "D": {"INT", "FLOAT"},
+            "T": {"INT", "FLOAT"},
+            "L": {"id"},
+            "L'": {",", "@"},
+        },
+        "follow_sets": {
+            "D": {"$"},
+            "T": {"id"},
+            "L": {";"},
+            "L'": {";"},
+        },
+        "ll1_table": {
+            ("D", "INT", ("T", "L", ";")),
+            ("D", "FLOAT", ("T", "L", ";")),
+            ("T", "INT", ("INT",)),
+            ("T", "FLOAT", ("FLOAT",)),
+            ("L", "id", ("id", "L'")),
+            ("L'", ",", (",", "id", "L'")),
+            ("L'", ";", ("@",)),
+        },
+        "is_ll1": True,
+    },
 }
 
 
