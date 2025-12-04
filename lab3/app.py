@@ -4,6 +4,7 @@ from src.parser import parse_grammar_string
 from src.left_recursion import LeftRecursionEliminator
 from src.left_factoring import LeftFactoringExtractor
 from src.first_follow import FirstFollowCalculator
+from src.ll1_parser import LL1Parser
 
 DEFAULT_GRAMMAR = """# 表达式文法（带左递归和左公因子）
 # 非终结符
@@ -62,12 +63,24 @@ def render_results(grammar_content: str) -> None:
         st.text(calculator.get_processing_log(include_first=False))
     st.code(calculator.get_follow_sets_str(), language="text")
 
+    st.divider()
+    st.subheader("任务3.4: LL(1) 分析表与判定")
+    ll1 = LL1Parser(grammar_no_lf, calculator.first_sets, calculator.follow_sets)
+    ll1.build_table()
+    if ll1.is_ll1:
+        st.success("✅ 该文法是 LL(1)")
+    else:
+        st.warning("⚠️ 该文法不是 LL(1)")
+        if ll1.conflicts:
+            st.text("冲突:\n" + "\n".join(f"- {c}" for c in ll1.conflicts))
+    st.code(ll1.format_table(), language="text")
+
 
 def main() -> None:
     st.set_page_config(page_title="语法分析算法可视化", page_icon="🎯", layout="wide")
 
     st.title("🎯 语法分析算法可视化")
-    st.caption("输入文法后自动解析并依次执行左递归消除、左公因子提取、FIRST/FOLLOW 计算。")
+    st.caption("输入文法后自动解析并依次执行左递归消除、左公因子提取、FIRST/FOLLOW 计算以及 LL(1) 表判定。")
 
     grammar_content = st.text_area(
         "文法输入",
