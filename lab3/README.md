@@ -76,3 +76,14 @@ uvx streamlit run app.py
 5. 项目中还包含两个示例文件，您可以将其内容复制到输入框中进行测试：
     - `test_grammars/expr_grammar.txt` (默认示例)
     - `test_grammars/complex_grammar.txt` (用于演示左公因子提取)
+
+## 运行测试
+
+本项目包含一个自动化测试脚本 `run_tests.py`，用于验证所有算法在不同文法下的正确性。
+
+使用 `uv` 运行测试脚本：
+```bash
+uv run run_tests.py
+```
+
+该脚本会自动读取 `test_grammars/` 目录下的所有测试用例，依次执行解析、消除左递归、提取左公因子、计算 FIRST/FOLLOW 集，并打印详细的执行结果。

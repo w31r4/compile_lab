@@ -1,0 +1,10 @@
+# LL(1) Grammar Example
+# Non-terminals
+S, L
+# Terminals
+a, b, c, ;
+# Start Symbol
+S
+# Productions
+S -> a L ;
+L -> S | c b

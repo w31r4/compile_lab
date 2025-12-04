@@ -31,7 +31,7 @@ def render_results(grammar_content: str) -> None:
     st.code(str(grammar), language="text")
 
     st.divider()
-    st.subheader("🔄 任务3.1: 消除左递归")
+    st.subheader("任务3.1: 消除左递归")
     eliminator = LeftRecursionEliminator(grammar)
     grammar_no_lr = eliminator.eliminate()
     with st.expander("处理日志", expanded=False):
@@ -39,7 +39,7 @@ def render_results(grammar_content: str) -> None:
     st.code(str(grammar_no_lr), language="text")
 
     st.divider()
-    st.subheader("🧭 任务3.2: 提取左公因子")
+    st.subheader("任务3.2: 提取左公因子")
     extractor = LeftFactoringExtractor(grammar_no_lr)
     grammar_no_lf = extractor.extract()
     with st.expander("处理日志", expanded=False):
@@ -47,7 +47,7 @@ def render_results(grammar_content: str) -> None:
     st.code(str(grammar_no_lf), language="text")
 
     st.divider()
-    st.subheader("📊 任务3.3: FIRST 集")
+    st.subheader("任务3.3: FIRST 集")
     calculator = FirstFollowCalculator(grammar_no_lf)
     calculator.compute_first_sets()
     with st.expander("计算过程", expanded=False):
@@ -55,7 +55,7 @@ def render_results(grammar_content: str) -> None:
     st.code(calculator.get_first_sets_str(), language="text")
 
     st.divider()
-    st.subheader("📊 任务3.3: FOLLOW 集")
+    st.subheader("任务3.3: FOLLOW 集")
     calculator.clear_log()
     calculator.compute_follow_sets()
     with st.expander("计算过程", expanded=False):

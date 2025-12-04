@@ -1,0 +1,11 @@
+# Mixed Grammar (Left Recursion and Left Factoring)
+# Non-terminals
+P, Q, R
+# Terminals
+x, y, z, w
+# Start Symbol
+P
+# Productions
+P -> P x y | Q z
+Q -> w R | w y
+R -> z | y
