@@ -1,0 +1,15 @@
+// test_02_arithmetic.sy
+// 算术运算测试：+, -, *, /, %, 优先级
+// 覆盖规则：Exp, AddExp, MulExp, UnaryExp, PrimaryExp
+int main() {
+    int student_id = 20220001;
+    int a = 10;
+    int b = 3;
+    int c;
+    c = a + b * 2;      // 16
+    int d = (a + b) * 2; // 26
+    int e = a / b;      // 3
+    int f = a % b;      // 1
+    int g = -a;         // -10
+    return c + d + e + f + g;
+}

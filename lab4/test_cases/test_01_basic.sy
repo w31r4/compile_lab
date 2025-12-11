@@ -1,0 +1,10 @@
+// test_01_basic.sy
+// 基础测试：main函数，变量声明，赋值，return
+// 覆盖规则：CompUnit, FuncDef, Block, Stmt, Decl, VarDecl, VarDef
+int main() {
+    int student_id = 20220001;
+    int a = 10;
+    int b;
+    b = 20;
+    return a + b;
+}

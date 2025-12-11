@@ -1,0 +1,25 @@
+// test_03_control.sy
+// 控制流测试：if-else, while, break, continue, 逻辑运算
+// 覆盖规则：Stmt, Cond, LOrExp, LAndExp, EqExp, RelExp
+int main() {
+    int student_id = 20220001;
+    int i = 0;
+    int sum = 0;
+    while (i < 10) {
+        if (i == 5) {
+            i = i + 1;
+            continue;
+        }
+        if (i > 8) {
+            break;
+        }
+        sum = sum + i;
+        i = i + 1;
+    }
+    
+    if (sum > 20 && sum < 40) {
+        return 1;
+    } else {
+        return 0;
+    }
+}

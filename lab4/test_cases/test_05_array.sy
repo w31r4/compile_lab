@@ -1,0 +1,23 @@
+// test_05_array.sy
+// 数组测试：一维数组，多维数组，数组初始化，数组元素访问
+// 覆盖规则：VarDef (Array), InitVal (Array), LVal (Array)
+int sum_array(int arr[], int n) {
+    int s = 0;
+    int i = 0;
+    while (i < n) {
+        s = s + arr[i];
+        i = i + 1;
+    }
+    return s;
+}
+
+int main() {
+    int student_id = 20220001;
+    int a[5] = {1, 2, 3, 4, 5};
+    int b[2][3] = {{1, 2, 3}, {4, 5, 6}};
+    
+    int s1 = sum_array(a, 5);
+    int s2 = b[0][0] + b[1][2]; // 1 + 6 = 7
+    
+    return s1 + s2;
+}

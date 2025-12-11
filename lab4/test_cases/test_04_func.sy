@@ -1,0 +1,19 @@
+// test_04_func.sy
+// 函数测试：函数定义，函数调用，递归，参数传递
+// 覆盖规则：FuncDef, FuncType, FuncFParams, FuncFParam, FuncRParams
+int factorial(int n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int student_id = 20220001;
+    int n = 5;
+    int result = factorial(n);
+    int sum = add(result, 10);
+    return sum;
+}

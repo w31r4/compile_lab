@@ -1,0 +1,10 @@
+// test_09_lex_error.sy
+// 词法错误测试：非法字符, 错误的数字格式
+int main() {
+    int student_id = 20220001;
+    int a = 10;
+    int b = ~1; // Error: Invalid character '~'
+    int c = 09; // Error: Invalid octal number '09'
+    float f = 0x1.2G; // Error: Invalid hex float
+    return 0;
+}
