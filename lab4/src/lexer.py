@@ -1,4 +1,3 @@
-import sys
 from .token_type import TokenType, Token
 
 
