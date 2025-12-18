@@ -4,6 +4,7 @@ import argparse
 from src.lexer import Lexer, LexerError
 from src.parser import Parser
 from src.ast_nodes import ASTPrinter
+from src.semantic_analyzer import SemanticAnalyzer
 
 
 def main():
@@ -58,11 +59,12 @@ def main():
             print(output)
             return 0
 
-        # TODO: 语义分析
-        # semantic_analyzer = SemanticAnalyzer()
-        # semantic_analyzer.analyze(ast)
-        # if semantic_analyzer.has_error:
-        #     return 1
+        # 语义分析
+        semantic_analyzer = SemanticAnalyzer()
+        semantic_analyzer.analyze(ast)
+        
+        if semantic_analyzer.has_error:
+            return 1
 
         print("success")
         return 0

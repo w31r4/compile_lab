@@ -1,0 +1,43 @@
+// 语义错误测试用例
+// 测试各种语义错误类型
+
+int main() {
+    int student_id = 20220001;
+    
+    // 错误类型 1: 使用未定义的变量
+    int a = undefined_var;  // Error type 1
+    
+    // 错误类型 2: 变量重复定义
+    int b = 10;
+    int b = 20;  // Error type 2
+    
+    // 错误类型 3: 调用未定义的函数
+    int c = undefined_func(1, 2);  // Error type 3
+    
+    // 错误类型 9: 函数参数不匹配
+    int d = getint(100);  // Error type 9: getint() 不需要参数
+    putint();  // Error type 9: putint(int) 需要1个参数
+    
+    return 0;
+}
+
+// 错误类型 10: return类型不匹配
+void test_void() {
+    return 1;  // Error type 10: void函数不应返回值
+}
+
+int test_int() {
+    return;  // Error type 10: int函数应返回int值
+}
+
+// 作用域测试 - 不应报错
+int test_scope() {
+    int x = 1;
+    {
+        int x = 2;  // 新作用域，允许重复定义
+        {
+            int x = 3;
+        }
+    }
+    return x;
+}
