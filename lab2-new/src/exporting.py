@@ -20,6 +20,7 @@ def automaton_to_dot(
     lines = [
         f"digraph {name} {{",
         "  rankdir=LR;",
+        "  splines=false;",
         "  node [shape=circle];",
         "  __start [shape=point];",
         f"  __start -> {start};",
@@ -53,9 +54,9 @@ def render_dot_to_png_bytes(dot_str: str) -> Optional[bytes]:
     if not dot_bin:
         return None
     res = subprocess.run([dot_bin, "-Tpng"], input=dot_str.encode("utf-8"), capture_output=True)
-    if res.returncode != 0:
-        return None
-    return res.stdout
+    if res.stdout:
+        return res.stdout
+    return None
 
 
 def export_graphs(
@@ -100,7 +101,11 @@ def export_graphs(
         cmd = [dot_bin, "-Tpng", filename, "-o", png_path]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if not quiet:
-            if res.returncode == 0:
-                print(f"生成 {png_path}")
+            ok = os.path.exists(png_path) and os.path.getsize(png_path) > 0
+            if ok:
+                if res.returncode == 0:
+                    print(f"生成 {png_path}")
+                else:
+                    print(f"生成 {png_path}（dot 返回码 {res.returncode}，但已输出文件）")
             else:
                 print(f"生成 {png_path} 失败：{res.stderr.strip()}")

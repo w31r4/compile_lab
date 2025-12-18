@@ -8,6 +8,7 @@
 ### 运行 Streamlit（推荐）
 在 `lab2-new/` 目录下：
 ```bash
+pip install streamlit
 streamlit run app.py
 ```
 
@@ -20,4 +21,3 @@ python main.py
 ```bash
 python main.py --regex "(a|b)*abb" --strings abb aabb ab --output-html visualization.html --no-interactive
 ```
-
