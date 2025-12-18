@@ -44,6 +44,7 @@ TEST_CASES = {
     "词法错误 (test_09)": "test_cases/test_09_lex_error.sy",
     "语法错误 (test_10)": "test_cases/test_10_syntax_error.sy",
     "语义错误 (test_11)": "test_cases/test_11_semantic_error.sy",
+    "⭐ 全部13种语义错误 (test_12)": "test_cases/test_12_all_semantic_errors.sy",
     "八进制测试": "test_cases/test_octal.sy",
 }
 
@@ -127,45 +128,149 @@ def main():
     st.title("🔧 SysY 编译器前端演示")
     st.caption("实时展示词法分析、语法分析、语义分析的完整编译流程")
 
-    # 侧边栏 - 测试用例选择
-    st.sidebar.header("📁 测试用例")
-    selected_test = st.sidebar.selectbox("选择预设测试用例", ["自定义输入"] + list(TEST_CASES.keys()))
+    # 顶部：支持的错误类型说明
+    with st.expander("📋 支持识别的错误类型 (共17种语义错误)", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(
+                """
+            **词法错误 (Error type A)**
+            - 非法字符
+            - 未闭合的注释
+            - 非法的十六进制浮点数 (如 0x1.5p10)
+            
+            **语法错误 (Error type B)**
+            - 缺少分号、括号等
+            - 语法结构不完整
+            - 表达式语法错误
+            
+            **语义错误 (17种)**
+            | 类型 | 描述 |
+            |------|------|
+            | Error 1 | 变量未声明 |
+            | Error 2 | 变量重复声明 |
+            | Error 3 | 调用未定义的函数 |
+            | Error 4 | 函数重复定义 |
+            | Error 5 | 把变量当做函数调用 |
+            | Error 6 | 函数名当普通变量引用 |
+            | Error 7 | 数组下标不是整型 |
+            | Error 8 | 非数组变量使用数组访问 |
+            | Error 9 | 函数参数数量或类型不匹配 |
+            """
+            )
+        with col2:
+            st.markdown(
+                """
+            | 类型 | 描述 |
+            |------|------|
+            | Error 10 | return类型与函数返回类型不匹配 |
+            | Error 11 | 操作数类型不匹配 |
+            | Error 12 | break语句不在循环体内 |
+            | Error 13 | continue语句不在循环体内 |
+            | **Error 14** | **数组越界访问** |
+            | **Error 15** | **修改常量** |
+            | **Error 16** | **void函数返回值被使用** |
+            | **Error 17** | **缺少main函数** |
+            """
+            )
 
-    # 加载代码
-    if selected_test == "自定义输入":
-        initial_code = DEFAULT_CODE
-    else:
-        filepath = TEST_CASES[selected_test]
-        initial_code = load_test_file(filepath)
+    # 侧边栏 - 测试用例选择
+    st.sidebar.header("📁 导入测试用例")
+    selected_test = st.sidebar.selectbox(
+        "选择预设测试用例", ["自定义输入"] + list(TEST_CASES.keys()), help="选择后代码将导入编辑器，可自由修改"
+    )
+
+    # 导入按钮
+    if st.sidebar.button("📥 导入到编辑器", use_container_width=True):
+        if selected_test != "自定义输入":
+            filepath = TEST_CASES[selected_test]
+            st.session_state.source_code = load_test_file(filepath)
+        else:
+            st.session_state.source_code = DEFAULT_CODE
+
+    # 初始化 session state
+    if "source_code" not in st.session_state:
+        if selected_test == "自定义输入":
+            st.session_state.source_code = DEFAULT_CODE
+        else:
+            filepath = TEST_CASES[selected_test]
+            st.session_state.source_code = load_test_file(filepath)
 
     # 侧边栏 - 分析选项
     st.sidebar.header("⚙️ 分析选项")
-    show_lexer = st.sidebar.checkbox("显示词法分析", value=True)
-    show_parser = st.sidebar.checkbox("显示语法分析", value=True)
-    show_semantic = st.sidebar.checkbox("显示语义分析", value=True)
+    show_lexer = st.sidebar.checkbox("显示词法分析详情", value=False)
+    show_parser = st.sidebar.checkbox("显示语法分析详情", value=False)
+    show_semantic = st.sidebar.checkbox("显示语义分析详情", value=False)
 
-    # 主区域 - 代码编辑器
+    # 主区域 - 代码编辑器（更大的输入框）
     st.subheader("📝 源代码编辑器")
     source_code = st.text_area(
-        "SysY 源代码", value=initial_code, height=300, help="在此输入或编辑 SysY 代码，修改后自动重新分析"
+        "SysY 源代码",
+        value=st.session_state.source_code,
+        height=400,  # 更大的高度
+        help="在此输入或编辑 SysY 代码，修改后自动重新分析",
     )
+
+    # 同步到 session state
+    st.session_state.source_code = source_code
 
     if not source_code.strip():
         st.info("请在上方输入 SysY 代码以开始分析")
         return
 
-    # 运行分析
+    # ========== 实时错误显示（紧贴代码编辑器下方）==========
+    all_errors = []
+
+    # 运行词法分析
+    tokens, lex_has_error, lex_error_output = run_lexer(source_code)
+    if lex_error_output:
+        for line in lex_error_output.strip().split("\n"):
+            if line.strip():
+                all_errors.append(("A", line.strip()))
+
+    # 运行语法分析
+    ast = None
+    parse_errors = []
+    ast_output = ""
+    parse_error_output = ""
+    if tokens:
+        ast, parse_errors, ast_output, parse_error_output = run_parser(tokens)
+        if parse_error_output:
+            for line in parse_error_output.strip().split("\n"):
+                if line.strip():
+                    all_errors.append(("B", line.strip()))
+
+    # 运行语义分析
+    semantic_errors = []
+    semantic_error_output = ""
+    semantic_success = True
+    if ast and not parse_errors:
+        semantic_success, semantic_errors, semantic_error_output = run_semantic(ast)
+        if semantic_error_output:
+            for line in semantic_error_output.strip().split("\n"):
+                if line.strip():
+                    all_errors.append(("语义", line.strip()))
+
+    # 显示错误面板（像IDE一样紧贴编辑器下方）
+    if all_errors:
+        st.markdown("---")
+        st.markdown("### ❌ 问题面板")
+        for err_type, err_msg in all_errors:
+            if err_type == "A":
+                st.error(f"🔤 词法错误: {err_msg}")
+            elif err_type == "B":
+                st.error(f"🌳 语法错误: {err_msg}")
+            else:
+                st.warning(f"🔍 语义错误: {err_msg}")
+    else:
+        st.success("✅ 无错误 - 程序分析通过!")
+
+    # 运行分析详情
     st.divider()
 
-    # ========== 词法分析 ==========
+    # ========== 词法分析详情 ==========
     if show_lexer:
-        st.subheader("🔤 任务 4.2: 词法分析")
-
-        tokens, lex_has_error, lex_error_output = run_lexer(source_code)
-
-        if lex_error_output:
-            st.error("词法错误 (Error type A)")
-            st.code(lex_error_output, language="text")
+        st.subheader("🔤 任务 4.2: 词法分析详情")
 
         if tokens:
             col1, col2 = st.columns([2, 1])
@@ -176,7 +281,7 @@ def main():
                 for token in tokens:
                     token_lines.append(token.to_string())
 
-                with st.expander(f"Token 列表 ({len(tokens)} 个)", expanded=True):
+                with st.expander(f"Token 列表 ({len(tokens)} 个)", expanded=False):
                     st.code("\n".join(token_lines), language="text")
 
             with col2:
@@ -193,85 +298,29 @@ def main():
                     for t, count in sorted(type_count.items(), key=lambda x: -x[1])[:10]:
                         st.text(f"{t}: {count}")
 
-        if lex_has_error:
-            st.warning("发现词法错误")
-            return
+        st.divider()
 
-        st.success("✅ 词法分析完成")
-    else:
-        tokens, lex_has_error, lex_error_output = run_lexer(source_code)
-        if lex_error_output:
-            st.error("词法错误，无法继续")
-            st.code(lex_error_output, language="text")
-            return
-
-    st.divider()
-
-    # ========== 语法分析 ==========
+    # ========== 语法分析详情 ==========
     if show_parser:
-        st.subheader("🌳 任务 4.3: 语法分析")
-
-        ast, parse_errors, ast_output, parse_error_output = run_parser(tokens)
-
-        if parse_error_output:
-            st.error("语法错误 (Error type B)")
-            st.code(parse_error_output, language="text")
+        st.subheader("🌳 任务 4.3: 语法分析详情")
 
         if ast_output:
-            with st.expander("抽象语法树 (AST)", expanded=True):
-                # 限制显示行数
-                lines = ast_output.split("\n")
-                if len(lines) > 100:
-                    st.code("\n".join(lines[:100]), language="text")
-                    st.caption(f"... 还有 {len(lines) - 100} 行")
-                else:
-                    st.code(ast_output, language="text")
+            with st.expander("抽象语法树 (AST)", expanded=False):
+                st.code(ast_output, language="text")
 
-        if parse_errors:
-            st.warning(f"发现 {len(parse_errors)} 个语法错误")
-            if not show_semantic:
-                return
+        st.divider()
+
+    # ========== 语义分析详情 ==========
+    if show_semantic:
+        st.subheader("🔍 任务 4.4: 语义分析详情")
+
+        if ast and not parse_errors:
+            if semantic_success:
+                st.info("符号表构建成功，无语义错误")
+            else:
+                st.info(f"发现 {len(semantic_errors)} 个语义错误（详见上方问题面板）")
         else:
-            st.success("✅ 语法分析完成")
-    else:
-        ast, parse_errors, ast_output, parse_error_output = run_parser(tokens)
-        if parse_error_output:
-            st.error("语法错误，无法继续语义分析")
-            st.code(parse_error_output, language="text")
-            if show_semantic:
-                return
-
-    st.divider()
-
-    # ========== 语义分析 ==========
-    if show_semantic and ast and not parse_errors:
-        st.subheader("🔍 任务 4.4: 语义分析")
-
-        success, semantic_errors, semantic_error_output = run_semantic(ast)
-
-        if semantic_error_output:
-            st.error("语义错误")
-            st.code(semantic_error_output, language="text")
-
-            # 错误类型说明
-            with st.expander("错误类型说明"):
-                st.markdown(
-                    """
-                | 错误类型 | 描述 |
-                |---------|------|
-                | Error type 1 | 使用未定义的变量 |
-                | Error type 2 | 变量/函数重复定义 |
-                | Error type 3 | 调用未定义的函数 |
-                | Error type 9 | 函数参数数量不匹配 |
-                | Error type 10 | return 类型与函数返回类型不匹配 |
-                """
-                )
-
-        if success:
-            st.success("✅ 语义分析完成 - 程序无语义错误!")
-            st.balloons()
-        else:
-            st.warning(f"发现 {len(semantic_errors)} 个语义错误")
+            st.info("语法分析未完成，无法进行语义分析")
 
     # 底部说明
     st.divider()

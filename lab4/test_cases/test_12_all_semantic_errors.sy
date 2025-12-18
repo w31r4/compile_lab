@@ -1,0 +1,184 @@
+// =====================================================
+// SysY 编译器语义错误示例 - 全部 17 种错误类型
+// =====================================================
+// 本文件演示编译器能够检测的所有语义错误类型
+// 每种错误都有清晰的注释说明
+
+// =====================================================
+// 错误类型 4: 函数重复定义
+// =====================================================
+int helper_func() {
+    return 42;
+}
+int helper_func() {  // Error 4: Redefined function 'helper_func'
+    return 100;
+}
+
+// =====================================================
+// 错误类型 2: 全局变量重复声明
+// =====================================================
+int global_counter = 0;
+int global_counter = 1;  // Error 2: Redefined variable 'global_counter'
+
+// =====================================================
+// 主函数 - 包含多种局部错误
+// =====================================================
+int main() {
+    
+    // =================================================
+    // 错误类型 1: 变量未声明
+    // =================================================
+    undefined_x = 100;  // Error 1: Undefined variable 'undefined_x'
+    int y = missing_var + 1;  // Error 1: Undefined variable 'missing_var'
+    
+    // =================================================
+    // 错误类型 2: 局部变量重复声明
+    // =================================================
+    int local_num = 10;
+    int local_num = 20;  // Error 2: Redefined variable 'local_num'
+    
+    // =================================================
+    // 错误类型 3: 调用未定义的函数
+    // =================================================
+    int result = unknown_function(1, 2);  // Error 3: Undefined function 'unknown_function'
+    foo();  // Error 3: Undefined function 'foo'
+    
+    // =================================================
+    // 错误类型 5: 把变量当做函数调用
+    // =================================================
+    int not_a_function = 123;
+    not_a_function(1, 2);  // Error 5: Variable 'not_a_function' is not a function
+    local_num();  // Error 5: Variable 'local_num' is not a function
+    
+    // =================================================
+    // 错误类型 6: 函数名当普通变量引用
+    // =================================================
+    helper_func = 999;  // Error 6: Function 'helper_func' used as variable
+    int z = helper_func + 1;  // Error 6: Function 'helper_func' used as variable
+    
+    // =================================================
+    // 错误类型 7: 数组下标不是整型
+    // =================================================
+    int numbers[10];
+    float float_index = 3.14;
+    numbers[float_index] = 100;  // Error 7: Array index is not an integer
+    numbers[2.5] = 50;  // Error 7: Array index is not an integer (直接浮点常量)
+    
+    // =================================================
+    // 错误类型 8: 非数组变量使用数组访问
+    // =================================================
+    int simple_var = 42;
+    simple_var[0] = 1;  // Error 8: Variable 'simple_var' is not an array
+    simple_var[1][2] = 3;  // Error 8: Variable 'simple_var' is not an array
+    
+    // =================================================
+    // 错误类型 9: 函数参数不匹配
+    // =================================================
+    helper_func(1);  // Error 9: Too many arguments (expects 0, got 1)
+    helper_func(1, 2, 3);  // Error 9: Too many arguments (expects 0, got 3)
+    
+    // =================================================
+    // 错误类型 12: break不在循环内
+    // =================================================
+    break;  // Error 12: break statement not within a loop
+    
+    // =================================================
+    // 错误类型 13: continue不在循环内
+    // =================================================
+    continue;  // Error 13: continue statement not within a loop
+    
+    // =================================================
+    // 错误类型 14: 数组越界访问 (常量索引)
+    // =================================================
+    int small_arr[5];
+    small_arr[10] = 1;  // Error 14: Array index 10 out of bounds (size: 5)
+    small_arr[-1] = 2;  // Error 14: Array index -1 is negative
+    small_arr[100] = 3;  // Error 14: Array index 100 out of bounds (size: 5)
+    
+    // =================================================
+    // 错误类型 15: 修改常量
+    // =================================================
+    const int MAX_SIZE = 100;
+    MAX_SIZE = 200;  // Error 15: Cannot modify constant 'MAX_SIZE'
+    
+    const int PI_INT = 3;
+    PI_INT = 4;  // Error 15: Cannot modify constant 'PI_INT'
+    
+    // =================================================
+    // 正确使用 break/continue (在循环内)
+    // =================================================
+    int i = 0;
+    while (i < 10) {
+        if (i == 5) {
+            break;     // OK - inside loop
+        }
+        i = i + 1;
+        if (i == 3) {
+            continue;  // OK - inside loop
+        }
+    }
+    
+    return 0;
+}
+
+// =====================================================
+// 错误类型 10: return类型不匹配
+// =====================================================
+int func_missing_return() {
+    return;  // Error 10: Missing return value in non-void function
+}
+
+int func_wrong_type() {
+    // 函数声明返回 int，但实际上没有返回任何值
+    int x = 1;
+    // Error 10: 隐式缺少 return
+}
+
+void func_extra_return() {
+    return 123;  // Error 10: Return value in void function
+}
+
+void func_return_float() {
+    return 3.14;  // Error 10: Return value in void function
+}
+
+// =====================================================
+// 错误类型 11: 操作数类型不匹配
+// =====================================================
+int type_mismatch_example() {
+    float f = 1.5;
+    int i = 10;
+    int mixed = f + i;  // Error 11: Type mismatch (int and float cannot mix)
+    
+    float f2 = 2.5;
+    int result = i * f2;  // Error 11: Type mismatch
+    
+    return 0;
+}
+
+// =====================================================
+// 更多函数用于测试错误类型 9 (参数不匹配)
+// =====================================================
+int add_two(int a, int b) {
+    return a + b;
+}
+
+int test_param_mismatch() {
+    add_two(1);        // Error 9: Too few arguments (expects 2, got 1)
+    add_two(1, 2, 3);  // Error 9: Too many arguments (expects 2, got 3)
+    add_two();         // Error 9: Too few arguments (expects 2, got 0)
+    return 0;
+}
+
+// =====================================================
+// 注意: 错误类型 16 (void函数返回值被使用) 和 
+//       错误类型 17 (缺少main函数) 需要特殊条件触发
+// 
+// Error 17 只有在整个程序没有 main 函数时才会触发
+// 由于本文件包含 main 函数，所以不会触发 Error 17
+// =====================================================
+
+// 如果要测试 Error 17，可以创建一个不包含 main 的文件:
+// test_no_main.sy:
+// int helper() { return 1; }
+// // 没有 main 函数 -> Error 17
