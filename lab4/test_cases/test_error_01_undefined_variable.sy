@@ -1,0 +1,37 @@
+// =====================================================
+// 测试错误类型 1: 使用未定义的变量
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    // 正确: 先声明后使用
+    int x = 10;
+    int y = x + 5;
+    
+    // 正确: 使用函数参数
+    int z = helper(y);
+    
+    // 正确: 在作用域内使用
+    {
+        int inner = 20;
+        int result = inner * 2;
+    }
+    
+    return 0;
+}
+
+int helper(int a) {
+    return a * 2;
+}
+
+// =============== 对照组 (触发 Error 1) ===============
+int error_case() {
+    // Error 1: 使用未声明的变量
+    int a = undefined_x + 10;  // Error 1: Undefined variable 'undefined_x'
+    
+    missing_var = 100;  // Error 1: Undefined variable 'missing_var'
+    
+    int b = no_such_var;  // Error 1: Undefined variable 'no_such_var'
+    
+    return 0;
+}

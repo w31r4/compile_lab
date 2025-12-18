@@ -1,0 +1,41 @@
+// =====================================================
+// 测试错误类型 10: return 语句类型与函数返回类型不匹配
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int correct_int_return() {
+    return 42;  // 正确: int 函数返回 int
+}
+
+float correct_float_return() {
+    return 3.14;  // 正确: float 函数返回 float
+}
+
+void correct_void_return() {
+    return;  // 正确: void 函数无返回值
+}
+
+int main() {
+    int a = correct_int_return();
+    float b = correct_float_return();
+    correct_void_return();
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 10) ===============
+int func_missing_return() {
+    return;  // Error 10: Missing return value in non-void function
+}
+
+void func_extra_return() {
+    return 123;  // Error 10: Return value in void function
+}
+
+void func_return_float() {
+    return 3.14;  // Error 10: Return value in void function
+}
+
+int func_wrong_type() {
+    int x = 1;
+    // 隐式缺少 return，可能不会触发错误（取决于实现）
+}

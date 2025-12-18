@@ -1,0 +1,45 @@
+// =====================================================
+// 测试错误类型 9: 函数参数类型或数量不匹配
+// =====================================================
+
+int no_params() {
+    return 42;
+}
+
+int one_param(int x) {
+    return x * 2;
+}
+
+int two_params(int a, int b) {
+    return a + b;
+}
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    // 正确: 参数数量匹配
+    int a = no_params();
+    int b = one_param(10);
+    int c = two_params(5, 3);
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 9) ===============
+int error_case() {
+    // Error 9: 参数数量不匹配
+    no_params(1);  // Error 9: expects 0, got 1
+    
+    no_params(1, 2, 3);  // Error 9: expects 0, got 3
+    
+    one_param();  // Error 9: expects 1, got 0
+    
+    one_param(1, 2);  // Error 9: expects 1, got 2
+    
+    two_params(1);  // Error 9: expects 2, got 1
+    
+    two_params(1, 2, 3);  // Error 9: expects 2, got 3
+    
+    two_params();  // Error 9: expects 2, got 0
+    
+    return 0;
+}

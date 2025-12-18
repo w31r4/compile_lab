@@ -1,0 +1,42 @@
+// =====================================================
+// 测试错误类型 2: 变量重复声明
+// =====================================================
+
+// 全局变量
+int global_var = 100;
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    // 正确: 不同名称的变量
+    int a = 10;
+    int b = 20;
+    int c = 30;
+    
+    // 正确: 不同作用域的同名变量
+    {
+        int x = 1;  // 内层作用域
+    }
+    int x = 2;  // 外层作用域，不冲突
+    
+    // 正确: 函数参数与局部变量不冲突
+    return helper(a);
+}
+
+int helper(int param) {
+    int local = param * 2;
+    return local;
+}
+
+// =============== 对照组 (触发 Error 2) ===============
+int another_global = 50;
+int another_global = 60;  // Error 2: Redefined variable 'another_global'
+
+int error_case() {
+    int dup_var = 10;
+    int dup_var = 20;  // Error 2: Redefined variable 'dup_var'
+    
+    float my_float = 1.5;
+    int my_float = 3;  // Error 2: Redefined variable 'my_float'
+    
+    return 0;
+}

@@ -1,0 +1,34 @@
+// =====================================================
+// 测试错误类型 5: 把变量当做函数调用
+// =====================================================
+
+int real_func(int x) {
+    return x * 2;
+}
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    // 正确: 调用真正的函数
+    int a = real_func(10);
+    
+    // 正确: 变量用于计算
+    int b = 20;
+    int c = b + 5;
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 5) ===============
+int error_case() {
+    int not_a_function = 123;
+    float my_var = 3.14;
+    
+    // Error 5: 把变量当做函数调用
+    not_a_function(1, 2);  // Error 5: Variable 'not_a_function' is not a function
+    
+    my_var();  // Error 5: Variable 'my_var' is not a function
+    
+    int x = not_a_function(10);  // Error 5: Variable 'not_a_function' is not a function
+    
+    return 0;
+}

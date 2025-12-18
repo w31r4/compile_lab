@@ -1,0 +1,43 @@
+// =====================================================
+// 测试错误类型 13: continue 语句不在循环体内
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    int i = 0;
+    
+    // 正确: continue 在 while 循环内
+    while (i < 10) {
+        i = i + 1;
+        if (i == 3) {
+            continue;  // 跳过本次循环
+        }
+    }
+    
+    // 正确: continue 在嵌套循环内
+    int j = 0;
+    while (i < 20) {
+        j = 0;
+        while (j < 5) {
+            j = j + 1;
+            if (j == 2) {
+                continue;  // 跳过内层循环本次迭代
+            }
+        }
+        i = i + 1;
+    }
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 13) ===============
+int error_case() {
+    // Error 13: continue 不在循环体内
+    continue;  // Error 13: continue statement not within a loop
+    
+    if (1) {
+        continue;  // Error 13: continue statement not within a loop
+    }
+    
+    return 0;
+}

@@ -33,6 +33,7 @@ int main() {
 
 # 预设测试用例
 TEST_CASES = {
+    # ========== 功能测试 ==========
     "基础测试 (test_01)": "test_cases/test_01_basic.sy",
     "算术运算 (test_02)": "test_cases/test_02_arithmetic.sy",
     "控制流 (test_03)": "test_cases/test_03_control.sy",
@@ -41,11 +42,30 @@ TEST_CASES = {
     "常量与全局 (test_06)": "test_cases/test_06_const_global.sy",
     "浮点数 (test_07)": "test_cases/test_07_float.sy",
     "复杂程序 (test_08)": "test_cases/test_08_complex.sy",
+    "八进制测试": "test_cases/test_octal.sy",
+    # ========== 错误检测测试 ==========
     "词法错误 (test_09)": "test_cases/test_09_lex_error.sy",
     "语法错误 (test_10)": "test_cases/test_10_syntax_error.sy",
     "语义错误 (test_11)": "test_cases/test_11_semantic_error.sy",
-    "⭐ 全部13种语义错误 (test_12)": "test_cases/test_12_all_semantic_errors.sy",
-    "八进制测试": "test_cases/test_octal.sy",
+    "⭐ 全部语义错误综合 (test_12)": "test_cases/test_12_all_semantic_errors.sy",
+    # ========== 17种语义错误独立测试 ==========
+    "🔴 Error 1: 未定义变量": "test_cases/test_error_01_undefined_variable.sy",
+    "🔴 Error 2: 变量重复声明": "test_cases/test_error_02_redefined_variable.sy",
+    "🔴 Error 3: 未定义函数": "test_cases/test_error_03_undefined_function.sy",
+    "🔴 Error 4: 函数重复定义": "test_cases/test_error_04_redefined_function.sy",
+    "🔴 Error 5: 变量当函数调用": "test_cases/test_error_05_variable_as_function.sy",
+    "🔴 Error 6: 函数名当变量": "test_cases/test_error_06_function_as_variable.sy",
+    "🔴 Error 7: 数组下标非整型": "test_cases/test_error_07_non_integer_index.sy",
+    "🔴 Error 8: 非数组使用下标": "test_cases/test_error_08_non_array_access.sy",
+    "🔴 Error 9: 参数不匹配": "test_cases/test_error_09_param_mismatch.sy",
+    "🔴 Error 10: return类型不匹配": "test_cases/test_error_10_return_mismatch.sy",
+    "🔴 Error 11: 操作数类型不匹配": "test_cases/test_error_11_type_mismatch.sy",
+    "🔴 Error 12: break不在循环内": "test_cases/test_error_12_break_not_in_loop.sy",
+    "🔴 Error 13: continue不在循环内": "test_cases/test_error_13_continue_not_in_loop.sy",
+    "🔴 Error 14: 数组越界访问": "test_cases/test_error_14_array_out_of_bounds.sy",
+    "🔴 Error 15: 修改常量": "test_cases/test_error_15_modify_constant.sy",
+    "🔴 Error 16: void返回值被使用": "test_cases/test_error_16_void_return_used.sy",
+    "🔴 Error 17: 缺少main函数": "test_cases/test_error_17_no_main.sy",
 }
 
 

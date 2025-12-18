@@ -1,0 +1,40 @@
+// =====================================================
+// 测试错误类型 14: 数组越界访问 (常量索引超出维度)
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    int arr[5];
+    
+    // 正确: 索引在范围内
+    arr[0] = 1;
+    arr[1] = 2;
+    arr[4] = 5;  // 最后一个有效索引
+    
+    int matrix[3][4];
+    matrix[0][0] = 1;
+    matrix[2][3] = 12;  // 最后一个有效位置
+    
+    // 正确: 使用变量索引（无法静态检查）
+    int i = 10;
+    arr[i] = 100;  // 运行时才能检测
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 14) ===============
+int error_case() {
+    int small_arr[5];
+    
+    // Error 14: 数组越界访问
+    small_arr[10] = 1;  // Error 14: Array index 10 out of bounds (size: 5)
+    
+    small_arr[100] = 3;  // Error 14: Array index 100 out of bounds (size: 5)
+    
+    int matrix[2][3];
+    matrix[5][0] = 1;  // Error 14: Array index 5 out of bounds (size: 2)
+    matrix[0][10] = 2;  // Error 14: Array index 10 out of bounds (size: 3)
+    matrix[12][100] = 3;  // Error 14: Both indices out of bounds
+    
+    return 0;
+}

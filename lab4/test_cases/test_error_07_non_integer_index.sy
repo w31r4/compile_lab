@@ -1,0 +1,37 @@
+// =====================================================
+// 测试错误类型 7: 数组下标不是整型
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    int arr[10];
+    
+    // 正确: 整数常量索引
+    arr[0] = 1;
+    arr[5] = 2;
+    
+    // 正确: 整数变量索引
+    int i = 3;
+    arr[i] = 100;
+    
+    // 正确: 整数表达式索引
+    arr[i + 1] = 200;
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 7) ===============
+int error_case() {
+    int numbers[10];
+    float float_index = 3.14;
+    
+    // Error 7: 数组下标不是整型
+    numbers[float_index] = 100;  // Error 7: Array index is not an integer
+    
+    numbers[2.5] = 50;  // Error 7: Array index is not an integer
+    
+    float f = 1.0;
+    int x = numbers[f];  // Error 7: Array index is not an integer
+    
+    return 0;
+}

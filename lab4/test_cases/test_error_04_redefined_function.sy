@@ -1,0 +1,40 @@
+// =====================================================
+// 测试错误类型 4: 函数重复定义
+// =====================================================
+
+// =============== 正确组 (不触发错误) ===============
+int func_a() {
+    return 1;
+}
+
+int func_b() {
+    return 2;
+}
+
+int func_c(int x) {
+    return x * 2;
+}
+
+int main() {
+    int a = func_a();
+    int b = func_b();
+    int c = func_c(10);
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 4) ===============
+int duplicate_func() {
+    return 42;
+}
+
+int duplicate_func() {  // Error 4: Redefined function 'duplicate_func'
+    return 100;
+}
+
+void another_dup() {
+    return;
+}
+
+int another_dup() {  // Error 4: Redefined function 'another_dup'
+    return 0;
+}

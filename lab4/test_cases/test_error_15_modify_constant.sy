@@ -1,0 +1,37 @@
+// =====================================================
+// 测试错误类型 15: 修改常量
+// =====================================================
+
+const int GLOBAL_CONST = 100;
+
+// =============== 正确组 (不触发错误) ===============
+int main() {
+    const int MAX_SIZE = 50;
+    
+    // 正确: 读取常量
+    int a = MAX_SIZE;
+    int b = GLOBAL_CONST;
+    int c = MAX_SIZE + GLOBAL_CONST;
+    
+    // 正确: 修改普通变量
+    int x = 10;
+    x = 20;
+    x = x + 1;
+    
+    return 0;
+}
+
+// =============== 对照组 (触发 Error 15) ===============
+int error_case() {
+    const int MAX_SIZE = 100;
+    const int PI_INT = 3;
+    
+    // Error 15: 修改常量
+    MAX_SIZE = 200;  // Error 15: Cannot modify constant 'MAX_SIZE'
+    
+    PI_INT = 4;  // Error 15: Cannot modify constant 'PI_INT'
+    
+    GLOBAL_CONST = 999;  // Error 15: Cannot modify constant 'GLOBAL_CONST'
+    
+    return 0;
+}
