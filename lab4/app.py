@@ -207,7 +207,7 @@ def main():
     source_code = st.text_area(
         "SysY 源代码",
         value=st.session_state.source_code,
-        height=400,  # 更大的高度
+        height=800,  # 超大高度
         help="在此输入或编辑 SysY 代码，修改后自动重新分析",
     )
 
