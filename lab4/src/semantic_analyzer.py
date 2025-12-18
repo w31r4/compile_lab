@@ -233,7 +233,12 @@ class SemanticAnalyzer:
             # 数组常量
             dims = []
             for dim_exp in node.dimensions:
-                dims.append(-1)  # 简化处理，不计算实际维度值
+                # 计算维度常量值，用于数组越界检查
+                dim_value = self.try_get_const_value(dim_exp)
+                if dim_value is not None and dim_value > 0:
+                    dims.append(dim_value)
+                else:
+                    dims.append(-1)  # 无法确定的维度
             symbol_type = ArrayType(base_type=base_type, dimensions=dims)
         else:
             # 标量常量
@@ -278,7 +283,12 @@ class SemanticAnalyzer:
             # 数组变量
             dims = []
             for dim_exp in node.dimensions:
-                dims.append(-1)  # 简化处理
+                # 计算维度常量值，用于数组越界检查
+                dim_value = self.try_get_const_value(dim_exp)
+                if dim_value is not None and dim_value > 0:
+                    dims.append(dim_value)
+                else:
+                    dims.append(-1)  # 无法确定的维度
             symbol_type = ArrayType(base_type=base_type, dimensions=dims)
         else:
             # 标量变量
@@ -566,6 +576,9 @@ class SemanticAnalyzer:
 
     def try_get_const_value(self, node: ASTNode) -> Optional[int]:
         """尝试获取常量表达式的值（简化版，仅处理直接数字常量）"""
+        if isinstance(node, ConstExpNode):
+            for child in node.children:
+                return self.try_get_const_value(child)
         if isinstance(node, ExpNode):
             for child in node.children:
                 return self.try_get_const_value(child)
@@ -585,10 +598,10 @@ class SemanticAnalyzer:
             for child in node.children:
                 if isinstance(child, NumberNode):
                     if not child.is_float:
-                        return child.int_value
+                        return int(child.value)
         if isinstance(node, NumberNode):
             if not node.is_float:
-                return node.int_value
+                return int(node.value)
         return None
 
     def visit_primary_exp(self, node: PrimaryExpNode):
