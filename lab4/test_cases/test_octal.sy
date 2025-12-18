@@ -1,0 +1,6 @@
+// test_octal.sy - 测试八进制和十六进制转十进制
+int main() {
+    int a = 0123;  // 八进制 83
+    int b = 0x3F;  // 十六进制 63
+    return 0;
+}

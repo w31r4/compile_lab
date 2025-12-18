@@ -123,15 +123,19 @@ class Lexer:
 
     def scan_number(self):
         start_col = self.column
+        start_line = self.line
         value = ""
         is_float = False
         is_hex = False
+        is_octal = False
 
         if self.peek() == "0":
             value += self.advance()
             if self.peek() in ("x", "X"):
                 is_hex = True
                 value += self.advance()
+            elif self.peek() is not None and self.peek().isdigit():
+                is_octal = True  # Potential octal
 
         while self.peek() is not None:
             char = self.peek()
@@ -146,6 +150,12 @@ class Lexer:
                     value += self.advance()
                     if self.peek() in ("+", "-"):
                         value += self.advance()
+                    # After p/P, must have digits for exponent
+                    if self.peek() is None or not self.peek().isdigit():
+                        self.error(f"Invalid hexadecimal float '{value}'")
+                        return
+                    while self.peek() is not None and self.peek().isdigit():
+                        value += self.advance()
                 else:
                     break
             else:
@@ -153,38 +163,78 @@ class Lexer:
                     value += self.advance()
                 elif char == ".":
                     is_float = True
+                    is_octal = False  # Not octal if it has decimal point
                     value += self.advance()
                 elif char in ("e", "E"):
                     is_float = True
+                    is_octal = False  # Not octal if it has exponent
                     value += self.advance()
                     if self.peek() in ("+", "-"):
+                        value += self.advance()
+                    # After e/E, must have digits for exponent
+                    if self.peek() is None or not self.peek().isdigit():
+                        self.error(f"Invalid float exponent in '{value}'")
+                        return
+                    while self.peek() is not None and self.peek().isdigit():
                         value += self.advance()
                 else:
                     break
 
-        # Validation
+        # Check for invalid trailing characters after hex
+        if is_hex and self.peek() is not None and (self.peek().isalpha() or self.peek() == "_"):
+            invalid_char = self.peek()
+            self.error(f"Invalid hexadecimal number '{value}{invalid_char}'")
+            return
+
+        # Validation and conversion
+        numeric_value = None
+
         if is_hex and is_float:
-            # Hex float validation (simplified)
-            pass
+            # Hex float validation and conversion
+            try:
+                numeric_value = float.fromhex(value)
+            except ValueError:
+                self.error(f"Invalid hexadecimal float '{value}'")
+                return
         elif is_hex:
-            # Hex int validation
-            pass
+            # Hex int validation and conversion
+            try:
+                numeric_value = int(value, 16)
+            except ValueError:
+                self.error(f"Invalid hexadecimal number '{value}'")
+                return
         elif is_float:
-            # Decimal float validation
-            pass
+            # Decimal float validation and conversion
+            try:
+                numeric_value = float(value)
+            except ValueError:
+                self.error(f"Invalid float number '{value}'")
+                return
         else:
             # Decimal or Octal int
-            if value.startswith("0") and len(value) > 1:
-                # Octal check
-                for c in value:
+            if is_octal or (value.startswith("0") and len(value) > 1):
+                # Octal check - validate all digits are 0-7
+                for c in value[1:]:  # Skip leading 0
                     if c in "89":
                         self.error(f"Illegal octal number '{value}'")
                         return
+                try:
+                    numeric_value = int(value, 8)
+                except ValueError:
+                    self.error(f"Invalid octal number '{value}'")
+                    return
+            else:
+                # Decimal
+                try:
+                    numeric_value = int(value)
+                except ValueError:
+                    self.error(f"Invalid integer '{value}'")
+                    return
 
         if is_float:
-            self.tokens.append(Token(TokenType.FLOAT_CONST, value, self.line, start_col))
+            self.tokens.append(Token(TokenType.FLOAT_CONST, value, start_line, start_col, numeric_value))
         else:
-            self.tokens.append(Token(TokenType.INT_CONST, value, self.line, start_col))
+            self.tokens.append(Token(TokenType.INT_CONST, value, start_line, start_col, numeric_value))
 
     def scan_string_literal(self):
         # Basic string skipping for now, as it's mainly for library calls

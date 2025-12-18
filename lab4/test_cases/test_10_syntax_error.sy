@@ -1,0 +1,13 @@
+// test_10_syntax_error.sy
+// 语法错误测试：缺少分号、括号不匹配等
+int main() {
+    int student_id = 20220001;
+    int a[10][12];
+    int i;
+    a[5, 3]=5;    // Error: Missing "]" - 二维数组访问错误
+    if (a[1][2]==0) 
+        i=1       // Error: Missing ";" 
+    else 
+        i=0;
+    return 0;
+}

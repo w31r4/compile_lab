@@ -51,11 +51,12 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type: TokenType, value: str, line: int, column: int):
+    def __init__(self, type: TokenType, value: str, line: int, column: int, numeric_value=None):
         self.type = type
-        self.value = value
+        self.value = value  # Original lexeme
         self.line = line
         self.column = column
+        self.numeric_value = numeric_value  # Decimal value for INTCON/FLOATCON
 
     def __repr__(self):
         return f"Token({self.type.name}, '{self.value}', line={self.line}, col={self.column})"
@@ -104,4 +105,13 @@ class Token:
         }
 
         type_str = type_map.get(self.type, self.type.name)
+        
+        # For numeric constants, output decimal value
+        if self.type == TokenType.INT_CONST and self.numeric_value is not None:
+            return f"{type_str} {self.numeric_value}"
+        elif self.type == TokenType.FLOAT_CONST and self.numeric_value is not None:
+            # Format float: remove unnecessary trailing zeros but keep at least one decimal
+            float_str = str(self.numeric_value)
+            return f"{type_str} {float_str}"
+        
         return f"{type_str} {self.value}"
