@@ -1,7 +1,9 @@
 [project]
 name = "lab4"
 version = "0.1.0"
-description = "Add your description here"
+description = "SysY Compiler Frontend - 词法分析、语法分析、语义分析"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "streamlit>=1.40.0",
+]
