@@ -58,25 +58,25 @@ def load_test_file(filepath: str) -> str:
 
 
 def run_lexer(source_code: str) -> tuple:
-    """运行词法分析器，返回 (tokens, errors, error_output)"""
+    """运行词法分析器，返回 (tokens, has_error, error_output)"""
     # 捕获错误输出
     old_stdout = sys.stdout
     sys.stdout = StringIO()
 
     lexer = Lexer(source_code)
     tokens = []
-    errors = []
+    has_error = False
 
     try:
         tokens = lexer.tokenize()
-        errors = lexer.errors
+        has_error = lexer.has_error
     except LexerError as e:
-        errors.append(str(e))
+        has_error = True
 
     error_output = sys.stdout.getvalue()
     sys.stdout = old_stdout
 
-    return tokens, errors, error_output
+    return tokens, has_error, error_output
 
 
 def run_parser(tokens: list) -> tuple:
@@ -161,7 +161,7 @@ def main():
     if show_lexer:
         st.subheader("🔤 任务 4.2: 词法分析")
 
-        tokens, lex_errors, lex_error_output = run_lexer(source_code)
+        tokens, lex_has_error, lex_error_output = run_lexer(source_code)
 
         if lex_error_output:
             st.error("词法错误 (Error type A)")
@@ -177,9 +177,7 @@ def main():
                     token_lines.append(token.to_string())
 
                 with st.expander(f"Token 列表 ({len(tokens)} 个)", expanded=True):
-                    st.code("\n".join(token_lines[:50]), language="text")
-                    if len(tokens) > 50:
-                        st.caption(f"... 还有 {len(tokens) - 50} 个 token")
+                    st.code("\n".join(token_lines), language="text")
 
             with col2:
                 # 统计信息
@@ -195,13 +193,13 @@ def main():
                     for t, count in sorted(type_count.items(), key=lambda x: -x[1])[:10]:
                         st.text(f"{t}: {count}")
 
-        if lex_errors:
-            st.warning(f"发现 {len(lex_errors)} 个词法错误")
+        if lex_has_error:
+            st.warning("发现词法错误")
             return
 
         st.success("✅ 词法分析完成")
     else:
-        tokens, _, lex_error_output = run_lexer(source_code)
+        tokens, lex_has_error, lex_error_output = run_lexer(source_code)
         if lex_error_output:
             st.error("词法错误，无法继续")
             st.code(lex_error_output, language="text")
