@@ -160,6 +160,13 @@ class Parser:
 
             self.advance()
 
+    def looks_like_invalid_type(self) -> bool:
+        """检测形如 'ident ident' 的非法声明起始"""
+        if not self.match(TokenType.ID):
+            return False
+        next_token = self.peek(1)
+        return bool(next_token and next_token.type == TokenType.ID)
+
     def make_terminal(self, token: Token) -> TerminalNode:
         """创建终结符节点"""
         if token is None:
@@ -249,6 +256,9 @@ class Parser:
                 else:
                     decl = self.parse_decl()
                     node.add_child(decl)
+            elif self.looks_like_invalid_type():
+                self.error("Expected type 'int' or 'float'")
+                self.synchronize()
             else:
                 # 未知 token，尝试恢复
                 self.error(f"Unexpected token '{self.current_token().value}'")
@@ -619,6 +629,9 @@ class Parser:
             # Decl
             decl = self.parse_decl()
             node.add_child(decl)
+        elif self.looks_like_invalid_type():
+            self.error("Expected type 'int' or 'float'")
+            self.synchronize()
         else:
             # Stmt
             stmt = self.parse_stmt()
