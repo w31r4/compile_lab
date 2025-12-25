@@ -226,13 +226,10 @@ def main():
     st.subheader("📝 源代码编辑器")
     source_code = st.text_area(
         "SysY 源代码",
-        value=st.session_state.source_code,
+        key="source_code",
         height=800,  # 超大高度
         help="在此输入或编辑 SysY 代码，修改后自动重新分析",
     )
-
-    # 同步到 session state
-    st.session_state.source_code = source_code
 
     if not source_code.strip():
         st.info("请在上方输入 SysY 代码以开始分析")
